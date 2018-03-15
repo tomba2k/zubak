@@ -1,0 +1,172 @@
+<!--!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"-->
+<html xmlns="http://www.w3.org/1999/xhtml"
+		xmlns:og="http://ogp.me/ns#"
+		xmlns:fb="https://www.facebook.com/2008/fbml">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta itemprop="name" content="Zadatak mapa">
+		<meta itemprop="description" content="Zadatak mapa sa HTML5, CSS3, JS i jQuery">
+		<title>Zadatak mapa</title>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/jquery-ui.css" rel="stylesheet">
+		<link href="css/ie10-viewport-bug-workaround.css" rel="stylesheet">
+		<style>
+			body, html {width:100%;}
+			body, html, #map-canvas {height:100%;}
+			.custInfo h3, .custInfo span {color:lightblue;}
+			.custInfo h3 {margin:2px 0;}
+			.custInfo>span, .custInfo>a {color:#ccc;font-size:9px;padding:0 10px;}
+			.custInfo>span {float:left;}
+			.custInfo>a {float:right;}
+		</style>
+	</head>
+	<body>
+		<div class="container" style="">
+			<div class="row-fluid">
+				<div class="col-md-4 col-sm-12 pull-right">
+					<nav class="navbar navbar-default sidebar" role="navigation">
+						<div class="container-fluid">
+							<div class="navbar-header">
+								<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-navbar-collapse-1">
+									<span class="sr-only">Toggle navigation</span>
+									<span class="icon-bar"></span>
+									<span class="icon-bar"></span>
+									<span class="icon-bar"></span>
+								</button>
+							</div>
+							<div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
+								<form class="nav">
+									<div class="form-group row">
+										<label for="zadatak-address-input" class="col-2 col-form-label">Adresa</label>
+										<div class="col-10">
+											<input class="form-control" type="text" value="Vaša adresa" id="zadatak-address-input">
+										</div>
+									</div>
+									<div class="form-group row">
+										<label for="zadatak-text-input" class="col-2 col-form-label">Ime</label>
+										<div class="col-10">
+											<input class="form-control" type="text" value="Vaše ime" id="zadatak-text-input">
+										</div>
+									</div>
+									<div class="form-group row">
+										<label for="zadatak-email-input" class="col-2 col-form-label">Email</label>
+										<div class="col-10">
+											<input class="form-control" type="email" value="primjer@zadatak.hr" id="zadatak-email-input">
+										</div>
+									</div>
+									<div class="form-group row">
+										<label for="zadatak-date-input" class="col-2 col-form-label">Datum</label>
+										<div class="col-10">
+											<input class="form-control" type="text" value="14.03.2018" id="zadatak-date-input">
+										</div>
+									</div>
+								</ul>
+							</div>
+						</div>
+					</nav>
+				</div>
+				<div id="map-canvas" class="col-md-8 col-sm-12"></div>
+			</div>
+		</div>
+		<script src="js/jquery-3.3.1.min.js"></script>
+		<script src="js/jquery-ui-1.12.1.min.js"></script>
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3&amp;key=AIzaSyBAjmTm6ys2rCeDtPmEO0oaTo84Idgb0S4"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/googlemaps/js-info-bubble/gh-pages/src/infobubble-compiled.js"></script>
+		<script type="text/javascript">
+			var LocationData = 
+				[
+					[45.721646, 16.051636, "<div class='pull-left'><h3>Auto Zubak</h3><span>Zagrebačka ulica 117,</span><br/><span>10410 Velika Gorica</span></div>", 1, "Auto Zubak", "Zagrebačka ulica 117, 10410 Velika Gorica" ],
+					[45.721140, 16.052706, "<div class='pull-left'><h3>PSC</h3><span>Zagrebačka ulica 156,</span><br/><span>10410 Velika Gorica</span></div>", 0, "PSC", "Zagrebačka ulica 156, 10410 Velika Gorica" ],
+					[45.721330, 16.051199, "<div class='pull-left'><h3>Neostar</h3><span>45.721330, 16.051199</span><br/><span>10410 Velika Gorica</span></div>", 2, "Neostar", "45.721330, 16.051199" ]
+				];
+			var markers = new Array();
+			var map; var start;
+			function initialize() {
+				var mapOptions = {
+					panControlOptions: {
+						position: google.maps.ControlPosition.TOP_RIGHT
+					},
+					zoomControl: true,
+					zoomControlOptions: {
+						style: google.maps.ZoomControlStyle.LARGE,
+						position: google.maps.ControlPosition.TOP_RIGHT
+					}
+				}
+				
+				var pinImage = {}; var pinShadow = {}; pinImage[0] = ''; pinShadow[0] = '';
+				pinImage[1] = new google.maps.MarkerImage("https://maps.gstatic.com/mapfiles/ms2/micons/purple-dot.png");
+				pinShadow[1] = new google.maps.MarkerImage("https://maps.gstatic.com/mapfiles/ms2/micons/msmarker.shadow.png");
+				pinImage[2] = new google.maps.MarkerImage("https://maps.gstatic.com/mapfiles/ms2/micons/purple-pushpin.png");
+				pinShadow[2] = new google.maps.MarkerImage("https://maps.gstatic.com/mapfiles/ms2/micons/pushpin_shadow.png");
+				
+				map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+				var bounds = new google.maps.LatLngBounds();
+				for (var i = 0; i < LocationData.length; i++) {
+					var p = LocationData[i];
+					var latlng = new google.maps.LatLng(p[0], p[1]);
+					bounds.extend(latlng);
+					var html = LocationData[i][2];
+					var marker = new google.maps.Marker({ position: latlng, map: map, title: p[4], icon: pinImage[p[3]], shadow: pinShadow[p[3]] });
+					markers[i]=marker;
+					var infowindow = new InfoBubble({
+						map: map,
+						content: p[2],
+						position: new google.maps.LatLng(-35, 151),
+						shadowStyle: 1,
+						padding: 6,
+						backgroundColor: 'rgba(40,40,40,0.9)',
+						borderRadius: 4,
+						arrowSize: 10,
+						borderWidth: 1,
+						borderColor: '#000',
+						//disableAutoPan: true,
+						arrowPosition: 30,
+						backgroundClassName: 'custInfo',
+						maxWidth: 300,
+						maxHeight: 160,
+						minWidth: 140,
+						minHeight: 80,
+					});
+					google.maps.event.addListener(marker, 'click', (function(marker, i) {
+						return function() {
+							infowindow.setContent(LocationData[i][2]);
+							infowindow.open(map, this);
+							$(".custInfo").parent().css("overflow-x","hidden");
+							$("#zadatak-address-input").val(LocationData[i][5]);
+						}
+					})(marker, i));
+			
+					google.maps.event.addListener(marker, 'mouseleave', (function(marker, i) {
+						return function() {
+							infowindow.close(map, this);
+						}
+					})(marker, i));
+				}
+				map.fitBounds(bounds);
+				
+				$("#zadatak-email-input").focusout(function() {
+					if(!isEmail($(this).val())) {
+						$(this).val("primjer@zadatak.hr");
+						alert("neispravna adresa");
+					}
+				});
+				$("input#zadatak-date-input").datepicker({
+					dateFormat: "dd.mm.yy",
+					firstDay : 1
+				});
+			}
+			google.maps.event.addDomListener(window, 'load', initialize);
+			
+			function emuClick(index) {
+				google.maps.event.trigger(markers[index], 'click');
+			}
+			
+			function isEmail(email) {
+				var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+				return regex.test(email);
+			}
+		</script>
+	</body>
+</html>
